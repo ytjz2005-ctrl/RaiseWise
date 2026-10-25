@@ -1,5 +1,5 @@
 // Monetag In-Page Push. Keep the provider URL and zone together when replacing a tag.
-// No advertising request is made until the visitor chooses Allow ads.
+// Load automatically on the homepage, while respecting saved opt-outs and GPC.
 (() => {
   'use strict';
   const KEY = 'raisewise.ad-choice.v1';
@@ -16,7 +16,7 @@
     try {
       const data = JSON.parse(localStorage.getItem(KEY));
       if (data && ['allow', 'deny'].includes(data.value) && Number.isFinite(data.time) && Date.now() - data.time >= 0 && Date.now() - data.time < EXPIRY) return data.value;
-    } catch { /* Storage may be disabled; keep ads off until an explicit choice. */ }
+    } catch { /* Storage may be disabled; use the default for this visit. */ }
     return null;
   }
 
@@ -24,7 +24,8 @@
   panel.id = 'ad-preferences';
   panel.className = 'ad-preferences';
   panel.setAttribute('aria-label', 'Advertising preferences');
-  panel.innerHTML = '<h2>Your ad choices</h2><p>Allow optional ads from Monetag? Monetag and its partners may use cookies and device or browsing information to deliver and measure ads. The calculator works either way. <a href="/privacy/#advertising">Privacy details</a></p><p class="ad-choice-status" role="status"></p><div class="ad-choice-actions"><button type="button" class="button button-outline" data-ad-choice="deny">Reject ads</button><button type="button" class="button button-outline" data-ad-choice="allow">Allow ads</button></div><button type="button" class="text-button ad-choice-close" hidden>Close preferences</button>';
+  panel.hidden = true;
+  panel.innerHTML = '<h2>Your ad choices</h2><p>Monetag ads load automatically on the calculator homepage. You can turn them off here. Monetag and its partners may use cookies and device or browsing information to deliver and measure ads. The calculator works either way. <a href="/privacy/#advertising">Privacy details</a></p><p class="ad-choice-status" role="status"></p><div class="ad-choice-actions"><button type="button" class="button button-outline" data-ad-choice="deny">Turn off ads</button><button type="button" class="button button-outline" data-ad-choice="allow">Turn on ads</button></div><button type="button" class="text-button ad-choice-close">Close preferences</button>';
   document.body.append(panel);
   const status = panel.querySelector('.ad-choice-status');
   const allowButton = panel.querySelector('[data-ad-choice="allow"]');
@@ -45,7 +46,7 @@
     panel.hidden = !open;
     document.body.classList.toggle('ad-choice-open', open);
     preferencesButton.setAttribute('aria-expanded', String(open));
-    closeButton.hidden = choice === null && !gpc;
+    closeButton.hidden = false;
     if (open && moveFocus) {
       lastFocus = document.activeElement;
       panel.querySelector('[data-ad-choice="deny"]').focus();
@@ -55,7 +56,7 @@
   }
 
   function loadAd() {
-    if (!home || loaded || choice !== 'allow' || gpc) return;
+    if (!home || loaded || choice === 'deny' || gpc) return;
     loaded = true;
     // Equivalent to the supplied tag, without an inline executable script.
     const script = document.createElement('script');
@@ -72,7 +73,7 @@
 
   function showStatus() {
     allowButton.disabled = gpc;
-    status.textContent = gpc ? 'Ads are off because your browser sends a Global Privacy Control signal.' : choice === 'allow' ? 'Optional ads are allowed in this browser.' : choice === 'deny' ? 'Optional ads are off in this browser.' : '';
+    status.textContent = gpc ? 'Ads are off because your browser sends a Global Privacy Control signal.' : choice === 'deny' ? 'Ads are off in this browser.' : 'Ads are on in this browser.';
   }
 
   for (const button of panel.querySelectorAll('[data-ad-choice]')) button.addEventListener('click', () => {
@@ -94,17 +95,17 @@
   preferencesButton.addEventListener('click', () => { showStatus(); toggle(true, true); });
   closeButton.addEventListener('click', () => toggle(false, true));
   panel.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && (choice !== null || gpc)) toggle(false, true);
+    if (event.key === 'Escape') toggle(false, true);
   });
   window.addEventListener('storage', event => {
     if (event.key !== KEY && event.key !== null) return;
     choice = readChoice();
-    if (loaded && choice !== 'allow') { location.reload(); return; }
+    if (loaded && choice === 'deny') { location.reload(); return; }
     showStatus();
-    toggle(choice === null && !gpc);
+    toggle(false);
     // An allowance made in another tab takes effect on the next navigation here.
   });
   showStatus();
-  toggle(choice === null && !gpc);
+  toggle(false);
   loadAd();
 })();
