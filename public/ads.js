@@ -1,12 +1,9 @@
-// Monetag In-Page Push. Keep the provider URL and zone together when replacing a tag.
-// Load automatically on the homepage, while respecting saved opt-outs and GPC.
+// Ad preference controls. The homepage head owns the only Monetag loader.
 (() => {
   'use strict';
   const KEY = 'raisewise.ad-choice.v1';
-  const ZONE = '12120101';
-  const TAG_URL = 'https://nap5k.com/tag.min.js';
   const EXPIRY = 180 * 24 * 60 * 60 * 1000;
-  let loaded = false;
+  const isLoaded = () => document.getElementById('monetag-inpage-tag') !== null;
   let choice = readChoice();
   let lastFocus;
   const gpc = navigator.globalPrivacyControl === true;
@@ -56,19 +53,8 @@
   }
 
   function loadAd() {
-    if (!home || loaded || choice === 'deny' || gpc) return;
-    loaded = true;
-    // Equivalent to the supplied tag, without an inline executable script.
-    const script = document.createElement('script');
-    script.id = 'monetag-inpage-tag';
-    script.dataset.zone = ZONE;
-    script.dataset.cfasync = 'false';
-    script.src = TAG_URL;
-    script.async = true;
-    script.addEventListener('error', () => {
-      status.textContent = 'The ad service could not load. Your calculator still works.';
-    });
-    document.head.append(script);
+    if (!home || choice === 'deny' || gpc) return;
+    window.raiseWiseLoadAds?.();
   }
 
   function showStatus() {
@@ -81,7 +67,7 @@
     try { localStorage.setItem(KEY, JSON.stringify({ value: choice, time: Date.now() })); }
     catch { /* The choice is still valid for this page visit. */ }
     showStatus();
-    if (choice === 'deny' && loaded) {
+    if (choice === 'deny' && isLoaded()) {
       // Removing the script element cannot undo provider listeners or already inserted ads.
       // Reload the document after giving the calculator time to finish its pending save.
       status.textContent = 'Ads are off. Reloading to stop the ad service…';
@@ -100,7 +86,7 @@
   window.addEventListener('storage', event => {
     if (event.key !== KEY && event.key !== null) return;
     choice = readChoice();
-    if (loaded && choice === 'deny') { location.reload(); return; }
+    if (isLoaded() && choice === 'deny') { location.reload(); return; }
     showStatus();
     toggle(false);
     // An allowance made in another tab takes effect on the next navigation here.
