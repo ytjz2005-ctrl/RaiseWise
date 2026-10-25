@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <script id="monetag-loader" data-cfasync="false">
+  <!-- <script id="monetag-loader" data-cfasync="false">
     // Keep the advertising tag in the homepage source for installation checks.
     window.raiseWiseLoadAds = function () {
       if (navigator.globalPrivacyControl === true || document.getElementById('monetag-inpage-tag')) return;
@@ -14,7 +14,8 @@
       (function(s){s.id='monetag-inpage-tag';s.dataset.cfasync='false';s.dataset.zone='12120101',s.src='https://nap5k.com/tag.min.js'})(document.head.appendChild(document.createElement('script')));
     };
     window.raiseWiseLoadAds();
-  </script>
+  </script> -->
+  <script>(function(s){s.dataset.zone='12120101',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Pay Raise Calculator — See Your Increase per Paycheck | RaiseWise</title>
   <meta name="description" content="Calculate your pay raise, salary increase percentage, and extra pay per paycheck. Compare and save scenarios privately on your device. Free, no sign-up.">
